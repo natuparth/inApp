@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import {
   Box,
   Grid,
@@ -14,31 +14,17 @@ import {
   Button,
 } from '@mui/material';
 
+import { useNavigate } from 'react-router-dom';
+import SearchOffIcon from '@mui/icons-material/SearchOff';
+
 import axios from 'axios';
 
-const genres = ['Action', 'Comedy', 'Drama', 'Horror', 'Sci-Fi'];
-const types = ['Movie', 'Series', 'Documentary'];
+const genres = ['Documentary', 'Short', 'Romance'];
+const types = ['short', 'movie',];
 const years = Array.from({ length: 175 }, (_, i) => `${1850 + i}`);
 
 const dummyResults = [
-  {
-    id: 1,
-    title: 'Inception',
-    year: '2010',
-    genre: 'Sci-Fi',
-    type: 'Movie',
-    poster: 'https://via.placeholder.com/200x300?text=Inception',
-    description: 'A mind-bending thriller by Christopher Nolan.',
-  },
-  {
-    id: 2,
-    title: 'The Office',
-    year: '2005',
-    genre: 'Comedy',
-    type: 'Series',
-    poster: 'https://via.placeholder.com/200x300?text=The+Office',
-    description: 'A mockumentary sitcom on office life.',
-  },
+
 ];
 
 const MovieSearch = () => {
@@ -47,23 +33,46 @@ const MovieSearch = () => {
   const [genre, setGenre] = useState('');
   const [type, setType] = useState('');
   const [results, setResults] = useState(dummyResults); // Replace this later with API results
+  const navigate = useNavigate();
 
-  const handleSearch = () => {
-    // TODO: Add real API call here
+  useEffect(() => {
+    //writing code for initial loading of data
     axios.get('http://localhost:8000/search_movie').then((response) => {
         console.log(response)
         setResults( response.data );
-    })
+    }).catch((response) => {
+        if(response.status === 404 ){
+          setResults([]);
+        }
+      })
+  }, [])
+  const handleSearch = () => {
+    // TODO: Add real API call here
+    axios.get('http://localhost:8000/search_movie', { params: { 
+        title: search,
+        year,
+        genre,
+        type
+    }}).then((response) => {
+        setResults( response.data );
+    }).catch((response) => {
+        if(response.status === 404 ){
+          setResults([]);
+        } else if( response.status === 401){
+           navigate('/login');
+        }
+      })
   };
 
   return (
     <Box p={3}>
-      <Box display="flex" flexWrap="wrap" gap={2} mb={3}>
+      <Box display="flex" flexWrap="wrap" justifyContent={"center"} gap={2} mb={3}>
         <TextField
           label="Search"
           variant="outlined"
           value={search}
           onChange={(e) => setSearch(e.target.value)}
+        //  onBlur={(e) => setSearch(e.target.value)}
         />
         <FormControl variant="outlined" sx={{ minWidth: 120 }}>
           <InputLabel>Year</InputLabel>
@@ -108,8 +117,8 @@ const MovieSearch = () => {
           Search
         </Button>
       </Box>
-
-      <Grid container spacing={3}>
+      {results.length > 0 ? (
+      <Grid container spacing={3} justifyContent={"space-evenly"}>
         {results.map((movie) => (
           <Grid item key={movie.id} xs={12} sm={6} md={4} lg={3}>
             <Card>
@@ -125,7 +134,19 @@ const MovieSearch = () => {
             </Card>
           </Grid>
         ))}
-      </Grid>
+      </Grid> ): (<Box
+          mt={6}
+          textAlign="center"
+          display="flex"
+          flexDirection="column"
+          alignItems="center"
+          justifyContent="center"
+        >
+          <SearchOffIcon sx={{ fontSize: 64, color: 'gray' }} />
+          <Typography variant="h6" color="text.secondary">
+            No records found
+          </Typography>
+        </Box>) }
     </Box>
   );
 };

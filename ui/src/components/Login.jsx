@@ -12,6 +12,8 @@ import Typography from '@mui/material/Typography';
 import Stack from '@mui/material/Stack';
 import MuiCard from '@mui/material/Card';
 import { styled } from '@mui/material/styles';
+import axios from 'axios';
+import { useNavigate } from 'react-router-dom';
 
 const Card = styled(MuiCard)(({ theme }) => ({
   display: 'flex',
@@ -61,7 +63,7 @@ export default function SignIn(props) {
   const [passwordError, setPasswordError] = React.useState(false);
   const [passwordErrorMessage, setPasswordErrorMessage] = React.useState('');
   const [open, setOpen] = React.useState(false);
-
+  const navigate = useNavigate();
   const handleClickOpen = () => {
     setOpen(true);
   };
@@ -70,16 +72,26 @@ export default function SignIn(props) {
     setOpen(false);
   };
 
-  const handleSubmit = (event) => {
+  const handleSubmit = async(event) => {
+    event.preventDefault();
     if (emailError || passwordError) {
-      event.preventDefault();
       return;
     }
     const data = new FormData(event.currentTarget);
-    console.log({
-      email: data.get('email'),
-      password: data.get('password'),
-    });
+    axios.post('http://localhost:8000/token',data, {
+        headers: {
+          'Content-Type': 'application/x-www-form-urlencoded',
+        },
+      }).then((response) => {
+        const token = response.data.access_token;
+        axios.defaults.headers.common['Authorization'] = `Bearer ${token}`;
+        navigate('/home');
+    }).catch((response) => {
+        console.log(response)
+        if(response.status === 404 ){
+         
+        }
+      })
   };
 
   const validateInputs = () => {
@@ -133,13 +145,13 @@ export default function SignIn(props) {
             }}
           >
             <FormControl>
-              <FormLabel htmlFor="email">Email</FormLabel>
+              <FormLabel htmlFor="username">Email</FormLabel>
               <TextField
                 error={emailError}
                 helperText={emailErrorMessage}
                 id="email"
                 type="email"
-                name="email"
+                name="username"
                 placeholder="your@email.com"
                 autoComplete="email"
                 autoFocus
